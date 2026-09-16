@@ -14,6 +14,12 @@ share professional links, submit applications, and track application status.
 - Application status workflow: new, reviewing, shortlisted, and rejected.
 - Firestore persistence with scoped realtime listeners and bounded queries.
 - Firestore security rules and composite indexes included in the repository.
+- Browser-side expiry automation closes notices after `expiresAt` and creates
+  in-app notices for the recruiter and applicants while retaining application
+  history.
+- A protected `/api/automation` endpoint can run independently on an hourly
+  scheduler (the included Vercel Cron configuration) for reliable expiry
+  closure and reminder creation when no browser is open.
 - Resume and intro-video links instead of binary uploads, avoiding Storage
   charges and allowing candidates to use Google Drive, Dropbox, YouTube, or
   another trusted HTTPS host.

@@ -39,6 +39,15 @@ and reminder reads to the signed-in recipient. Jobs are publicly readable.
 - Exercise sign-up, recruiter approval, job posting, applications, and reminders
   against the production project before opening registration.
 
+## Background automation
+
+The repository includes `/api/automation`, a protected server endpoint that
+closes expired jobs, retains applications, and creates deduplicated in-app
+reminders for candidates and recruiters. `vercel.json` schedules it hourly.
+Configure `FIREBASE_SERVICE_ACCOUNT_JSON` and `CRON_SECRET` as
+server-only deployment secrets. The endpoint creates in-app reminders; real
+email or SMS delivery requires a separately configured provider.
+
 ## Capacity contingency: next 5k users
 
 Firebase Authentication can continue holding the additional users without a

@@ -283,11 +283,65 @@ export function markReminderRead(reminderId: string) {
 
 export function processReminderAutomation() {
   const users = getUsers();
-  const jobs = getJobs();
+  const allJobs = memory.jobs;
   const applications = getApplications();
   let generated = 0;
+  const now = Date.now();
 
-  const reminderCandidates = new Set<string>();
+  allJobs.forEach((job) => {
+    const expiresAt = new Date(job.expiresAt).getTime();
+    if (job.status !== "open" || Number.isNaN(expiresAt) || expiresAt > now) {
+      return;
+    }
+
+    writeJobs(memory.jobs.map((entry) =>
+      entry.id === job.id ? { ...entry, status: "closed" as const } : entry,
+    ));
+
+    if (!getReminders().some(
+      (reminder) =>
+        reminder.recipientId === job.recruiterId &&
+        reminder.recipientRole === "recruiter" &&
+        reminder.source === "job" &&
+        reminder.message.includes(`listing ${job.id} closed`),
+    ) && createReminder({
+      recipientRole: "recruiter",
+      recipientId: job.recruiterId,
+      title: "Job notice period ended",
+      message: `Your listing ${job.id} closed because the notice period for ${job.title} ended. Review the applications retained in your dashboard.`,
+      channel: "in-app",
+      source: "job",
+      scheduledFor: new Date().toISOString(),
+    })) {
+      generated += 1;
+    }
+
+    const candidateIds = new Set(
+      applications
+        .filter((application) => application.jobId === job.id)
+        .map((application) => application.candidateId),
+    );
+
+    candidateIds.forEach((candidateId) => {
+      if (!getReminders().some(
+        (reminder) =>
+          reminder.recipientId === candidateId &&
+          reminder.recipientRole === "candidate" &&
+          reminder.source === "job" &&
+          reminder.message.includes(`listing ${job.id} closed`),
+      ) && createReminder({
+        recipientRole: "candidate",
+        recipientId: candidateId,
+        title: "Job notice period ended",
+        message: `The listing ${job.id} for ${job.title} closed because its notice period ended. Your application history remains available in your dashboard.`,
+        channel: "in-app",
+        source: "job",
+        scheduledFor: new Date().toISOString(),
+      })) {
+        generated += 1;
+      }
+    });
+  });
 
   applications.forEach((application) => {
     const appliedAt = new Date(application.appliedAt).getTime();
@@ -309,7 +363,7 @@ export function processReminderAutomation() {
     );
 
     if (!alreadyQueued) {
-      const job = jobs.find((entry) => entry.id === application.jobId);
+      const job = allJobs.find((entry) => entry.id === application.jobId);
       const triggered = createReminder({
         recipientRole: "candidate",
         recipientId: application.candidateId,
@@ -320,14 +374,13 @@ export function processReminderAutomation() {
         scheduledFor: new Date().toISOString(),
       });
       if (triggered) {
-        reminderCandidates.add(application.candidateId);
         generated += 1;
       }
     }
   });
 
-  jobs.forEach((job) => {
-    const hoursUntilExpiry = (new Date(job.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60);
+  getJobs().forEach((job) => {
+    const hoursUntilExpiry = (new Date(job.expiresAt).getTime() - now) / (1000 * 60 * 60);
     const newApplicants = applications.filter((application) => application.jobId === job.id).length;
 
     if (hoursUntilExpiry <= 72 && hoursUntilExpiry > 0 && newApplicants > 0) {

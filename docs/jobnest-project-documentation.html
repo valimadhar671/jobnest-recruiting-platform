@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JobNest Project Documentation</title>
+  <style>
+    @page { size: A4; margin: 11mm 13mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #172033;
+      font-size: 8.5pt;
+      line-height: 1.18;
+      margin: 0;
+    }
+    h1 { color: #153b72; font-size: 22pt; margin: 0 0 2pt; }
+    h2 {
+      color: #153b72;
+      font-size: 13.2pt;
+      border-bottom: 1px solid #bfd0e8;
+      padding-bottom: 2pt;
+      margin: 11pt 0 5pt;
+    }
+    h3 { color: #205493; font-size: 10.5pt; margin: 6pt 0 2pt; }
+    p { margin: 3pt 0 5pt; }
+    ul, ol { margin: 3pt 0 6pt 16pt; padding: 0; }
+    li { margin: 1.5pt 0; }
+    .subtitle { color: #53657f; font-size: 9.5pt; margin-bottom: 6pt; }
+    .hero {
+      background: #eef5ff;
+      border-left: 4px solid #2366b1;
+      padding: 5pt 7pt;
+      margin: 0 0 5pt;
+    }
+    .grid { display: table; width: 100%; table-layout: fixed; }
+    .col { display: table-cell; vertical-align: top; width: 50%;     padding-right: 7pt; }
+    .col:last-child { padding-right: 0; padding-left: 7pt; }
+    .card {
+      background: #f7f9fc;
+      border: 1px solid #d9e2ef;
+      border-radius: 4pt;
+      padding: 4pt 6pt;
+      margin: 3pt 0 5pt;
+    }
+    .label { color: #53657f; font-weight: bold; }
+    table { border-collapse: collapse; width: 100%; margin: 4pt 0 7pt; }
+    th, td { border: 1px solid #ccd7e5; padding: 2.5pt 4pt; text-align: left; vertical-align: top; }
+    th { background: #eaf2fc; color: #153b72; }
+    .small { color: #53657f; font-size: 8.5pt; }
+    .footer {
+      border-top: 1px solid #ccd7e5;
+      color: #53657f;
+      font-size: 8pt;
+      margin-top: 9pt;
+      padding-top: 4pt;
+    }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+  <h1>JobNest</h1>
+  <div class="subtitle">Recruiter-first job platform for private, scalable candidate sourcing</div>
+
+  <div class="hero">
+    <strong>Purpose.</strong> JobNest gives a private recruiter a focused web workspace to publish openings,
+    receive structured candidate applications, review professional profiles, and manage hiring progress
+    without maintaining a large social network. It is designed for a low-cost Firebase free-tier launch
+    while keeping a clear path to production scaling.
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <h2>Product overview</h2>
+      <p>JobNest connects two user groups:</p>
+      <ul>
+        <li><strong>Candidates</strong> create a profile, provide contact and professional information,
+          add resume and introduction-video links, browse jobs, and apply.</li>
+        <li><strong>Recruiters</strong> request access, wait for approval, publish job openings, and
+          review applications related to their jobs.</li>
+        <li><strong>Owner administrator</strong> approves recruiters and performs privileged operations
+          through a Firebase custom claim.</li>
+      </ul>
+
+      <h2>Core features</h2>
+      <ul>
+        <li>Email/password authentication plus Google and GitHub sign-in.</li>
+        <li>Candidate and recruiter roles with recruiter approval workflow.</li>
+        <li>Public job browsing with search, location, role, and status filters.</li>
+        <li>Recruiter job creation, management, and application review.</li>
+        <li>Application stages: <em>new</em>, <em>reviewing</em>, <em>shortlisted</em>, and <em>rejected</em>.</li>
+        <li>Candidate dashboard with profile and application metrics.</li>
+        <li>In-app reminders and realtime dashboard updates.</li>
+        <li>Responsive Next.js interface with reusable shared components.</li>
+      </ul>
+
+      <h2>Technology stack</h2>
+      <p>Next.js 16, React 19, TypeScript, Tailwind CSS, Firebase Authentication,
+        Cloud Firestore, realtime listeners, and composite indexes.</p>
+    </div>
+
+    <div class="col">
+      <h2>Working procedure</h2>
+      <ol>
+        <li>A user registers or signs in through Firebase Authentication.</li>
+        <li>The authenticated identity is synchronized with the Firestore profile.</li>
+        <li>A candidate completes a profile and supplies optional HTTPS resume/video links.</li>
+        <li>A recruiter registers and remains pending until the owner approves the account.</li>
+        <li>An approved recruiter creates an opening. Open jobs are publicly readable.</li>
+        <li>A candidate opens a job, submits a cover note and links, and creates an application.</li>
+        <li>The recruiter reviews related applications and updates their stage.</li>
+        <li>The candidate tracks progress and reminders from the dashboard.</li>
+      </ol>
+
+      <h2>Link-based candidate attachments</h2>
+      <p>Resumes and introduction videos use validated <strong>HTTP/HTTPS links</strong> from Google Drive,
+        Dropbox, YouTube, or another trusted host. Only the link is stored, avoiding Firebase Storage
+        billing in the current free-tier design. Candidates control external sharing permissions.</p>
+
+      <h2>Security and access control</h2>
+      <ul>
+        <li>Firestore rules require authentication for private records and scope access by user relationship.</li>
+        <li>Only approved recruiters can create and manage their own jobs.</li>
+        <li>Applications are visible to the related candidate, recruiter, or administrator.</li>
+        <li>Reminders are restricted to their recipient; owner actions require <code>admin == true</code>.</li>
+        <li>No passwords, sessions, service-account keys, or local JSON data are stored in the app.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+  <h1>Operations and delivery</h1>
+  <div class="subtitle">Deployment, scaling, validation, and responsible use</div>
+
+  <div class="grid">
+    <div class="col">
+      <h2>Deployment procedure</h2>
+      <ol>
+        <li>Create a Firebase project and web app.</li>
+        <li>Copy the public Firebase web configuration into a local <code>.env.local</code> file.</li>
+        <li>Enable Email/Password, Google, and GitHub providers.</li>
+        <li>Create Firestore and deploy the repository’s rules and indexes.</li>
+        <li>Add the production domain to Firebase Authentication authorized domains.</li>
+        <li>Deploy the Next.js application with the production Firebase environment variables.</li>
+        <li>Set the owner’s administrator claim through a trusted server-side administrative process.</li>
+      </ol>
+
+      <h2>Validation checklist</h2>
+      <ul>
+        <li>Run <code>npm run lint</code>.</li>
+        <li>Run <code>npx tsc --noEmit</code>.</li>
+        <li>Run <code>npm run build</code>.</li>
+        <li>Run <code>npm audit --omit=dev</code>.</li>
+        <li>Test registration and sign-in for all enabled providers.</li>
+        <li>Test recruiter approval, job creation, application submission, status changes, reminders, and realtime updates using two browser sessions.</li>
+      </ul>
+
+      <h2>Scaling approach</h2>
+      <p>
+        Firestore queries and listeners are scoped and bounded rather than reading entire collections.
+        The free-tier launch should use quota alerts, App Check, authorized domains, abuse monitoring,
+        backups, and a production rollback build. As usage grows, review read/write costs first, then
+        increase Firebase quotas or billing limits before traffic reaches the configured thresholds.
+      </p>
+    </div>
+
+    <div class="col">
+      <h2>Data model</h2>
+      <table>
+        <tr><th>Collection</th><th>Role</th></tr>
+        <tr><td><code>users</code></td><td>Identity, role, approval state, contact and candidate profile data</td></tr>
+        <tr><td><code>jobs</code></td><td>Public openings owned by approved recruiters</td></tr>
+        <tr><td><code>applications</code></td><td>Candidate submissions, links, cover notes, and status</td></tr>
+        <tr><td><code>reminders</code></td><td>Recipient-scoped recruiter and candidate notifications</td></tr>
+      </table>
+
+      <h2>Project structure</h2>
+      <ul>
+        <li><code>src/app/</code>: routes and page-level user interfaces.</li>
+        <li><code>src/components/</code>: shared authentication, branding, and reminder components.</li>
+        <li><code>src/lib/firebase-client.ts</code>: Firebase initialization and client access.</li>
+        <li><code>src/lib/jobnest-data.ts</code>: domain models, validation, persistence, and realtime state.</li>
+        <li><code>firestore.rules</code> and <code>firestore.indexes.json</code>: database security and query support.</li>
+      </ul>
+
+      <h2>Important operational notes</h2>
+      <p>Never commit <code>.env.local</code>, OAuth secrets, service-account keys, or API tokens.
+        External links must have suitable sharing permissions; JobNest does not control their privacy or
+        availability. Real email/SMS delivery needs a separate provider. Firebase Storage is optional.</p>
+    </div>
+  </div>
+
+</body>
+</html>
