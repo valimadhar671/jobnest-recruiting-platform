@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId}/{fileName} {
+      // Candidate files are private. Recruiter review uses the authenticated
+      // download URL stored on the application record.
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType == 'application/pdf'
+          || request.resource.contentType == 'video/mp4'
+          || request.resource.contentType == 'video/webm'
+          || request.resource.contentType == 'video/quicktime'
+        );
+      allow delete: if signedIn() && request.auth.uid == userId;
+    }
+  }
+}
