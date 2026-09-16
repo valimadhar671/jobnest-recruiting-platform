@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function admin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function ownsUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function shortText(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    match /users/{userId} {
+      allow read: if ownsUser(userId) || admin();
+      allow create: if ownsUser(userId)
+        && request.resource.data.id == userId
+        && request.resource.data.email == request.auth.token.email
+        && ((request.resource.data.role == "candidate"
+          && request.resource.data.approved == true
+          && request.resource.data.status == "active")
+          || (request.resource.data.role == "recruiter"
+            && request.resource.data.approved == false
+            && request.resource.data.status == "pending"));
+      allow update: if admin() || (
+        ownsUser(userId)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.approved == resource.data.approved
+        && request.resource.data.status == resource.data.status
+      );
+      allow delete: if admin();
+    }
+
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.recruiterId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "recruiter"
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true
+        && request.resource.data.status == "open"
+        && shortText(request.resource.data.title, 160)
+        && shortText(request.resource.data.company, 160)
+        && shortText(request.resource.data.description, 10000)
+        && request.resource.data.skills is list
+        && request.resource.data.skills.size() <= 30;
+      allow update: if signedIn()
+        && (resource.data.recruiterId == request.auth.uid || admin())
+        && (admin() || (
+          request.resource.data.recruiterId == resource.data.recruiterId
+          && request.resource.data.postedAt == resource.data.postedAt
+          && shortText(request.resource.data.title, 160)
+          && shortText(request.resource.data.company, 160)
+          && shortText(request.resource.data.description, 10000)
+        ));
+      allow delete: if signedIn()
+        && (resource.data.recruiterId == request.auth.uid || admin());
+    }
+
+    match /applications/{applicationId} {
+      allow read: if signedIn()
+        && (resource.data.candidateId == request.auth.uid
+          || resource.data.recruiterId == request.auth.uid
+          || admin());
+      allow create: if signedIn()
+        && request.resource.data.candidateId == request.auth.uid
+        && request.resource.data.recruiterId == get(/databases/$(database)/documents/jobs/$(request.resource.data.jobId)).data.recruiterId
+        && shortText(request.resource.data.coverNote, 5000)
+        && request.resource.data.status == "new";
+      allow update: if signedIn()
+        && (resource.data.candidateId == request.auth.uid
+          || resource.data.recruiterId == request.auth.uid || admin())
+        && (admin()
+          || (
+            request.resource.data.candidateId == resource.data.candidateId
+            && request.resource.data.recruiterId == resource.data.recruiterId
+            && request.resource.data.jobId == resource.data.jobId
+            && (
+              resource.data.recruiterId == request.auth.uid
+              || request.resource.data.status == resource.data.status
+            )
+          ));
+      allow delete: if admin() || (signedIn()
+        && (resource.data.candidateId == request.auth.uid || resource.data.recruiterId == request.auth.uid));
+    }
+
+    match /reminders/{reminderId} {
+      allow read: if admin() || (signedIn() && resource.data.recipientId == request.auth.uid);
+      allow create: if admin() || (signedIn() && request.resource.data.recipientId == request.auth.uid);
+      allow update: if admin() || (
+        signedIn()
+        && resource.data.recipientId == request.auth.uid
+        && request.resource.data.recipientId == resource.data.recipientId
+        && request.resource.data.recipientRole == resource.data.recipientRole
+        && request.resource.data.source == resource.data.source
+        && request.resource.data.status == "read"
+      );
+      allow delete: if admin() || (signedIn() && resource.data.recipientId == request.auth.uid);
+    }
+  }
+}
