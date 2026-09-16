@@ -138,6 +138,8 @@ The project does not include fake production credentials or demo passwords.
 All live Firebase behavior should be tested in the target Firebase project
 after deployment, including authentication, recruiter approval, job creation,
 applications, status updates, and realtime synchronization in two browsers.
+The background automation endpoint additionally requires the deployment-only
+`FIREBASE_SERVICE_ACCOUNT_JSON` and `CRON_SECRET` variables from `.env.example`.
 
 ## Security and privacy notes
 
