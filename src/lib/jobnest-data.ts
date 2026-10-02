@@ -36,6 +36,44 @@ export type Job = {
   status: "open" | "closed";
 };
 
+export type Course = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  description: string;
+  category: string;
+  level: "beginner" | "intermediate" | "advanced";
+  duration: string;
+  accessType: "free" | "paid";
+  paymentUrl?: string;
+  paymentInstructions?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  supportUrl?: string;
+  contentUrl: string;
+  contentType: string;
+  certificateUrl?: string;
+  certificateDetails?: string;
+  createdAt: string;
+  status: "published";
+};
+
+export type CourseAccess = {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  authorId: string;
+  learnerId: string;
+  learnerName: string;
+  learnerEmail: string;
+  paymentReference: string;
+  paymentNotes?: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
+  approvedAt?: string;
+};
+
 export type Application = {
   id: string;
   jobId: string;
@@ -80,6 +118,8 @@ const memory = {
   users: [] as User[],
   jobs: [] as Job[],
   applications: [] as Application[],
+  courses: [] as Course[],
+  courseAccess: [] as CourseAccess[],
   reminders: [] as Reminder[],
   session: null as Session | null,
 };
@@ -142,6 +182,10 @@ export async function startRealtimeSync() {
         memory.jobs = records as Job[];
       } else if (collectionName === "applications") {
         memory.applications = records as Application[];
+      } else if (collectionName === "courses") {
+        memory.courses = records as Course[];
+      } else if (collectionName === "courseAccess") {
+        memory.courseAccess = records as CourseAccess[];
       } else {
         memory.reminders = records as Reminder[];
       }
@@ -207,6 +251,28 @@ export function writeApplications(applications: Application[]) {
   memory.applications = applications;
   notifyDataSubscribers();
   void persistCollection("applications", applications, previous);
+}
+
+export function getCourses(): Course[] {
+  return memory.courses;
+}
+
+export function writeCourses(courses: Course[]) {
+  const previous = memory.courses;
+  memory.courses = courses;
+  notifyDataSubscribers();
+  void persistCollection("courses", courses, previous);
+}
+
+export function getCourseAccess(): CourseAccess[] {
+  return memory.courseAccess;
+}
+
+export function writeCourseAccess(access: CourseAccess[]) {
+  const previous = memory.courseAccess;
+  memory.courseAccess = access;
+  notifyDataSubscribers();
+  void persistCollection("courseAccess", access, previous);
 }
 
 export function getReminders(): Reminder[] {

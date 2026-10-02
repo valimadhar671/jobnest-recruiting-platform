@@ -25,6 +25,9 @@ share professional links, submit applications, and track application status.
   charges and allowing candidates to use Google Drive, Dropbox, YouTube, or
   another trusted HTTPS host.
 - In-app reminders and realtime dashboard updates.
+- Course publishing with uploader name, learning period, free or paid access,
+  external payment instructions, learner payment confirmation, uploader approval,
+  and optional certificate details/link.
 
 ## Technology
 
@@ -117,6 +120,22 @@ The repository includes:
 2. Wait for owner approval.
 3. Create and manage job openings after approval.
 4. Review related applications and update their statuses.
+
+### Courses
+
+1. A signed-in user uploads a PDF or video course and adds the course name,
+   description, uploader identity, learning period, and certificate information.
+2. Paid courses include an external HTTPS payment link and payment instructions.
+3. Paid uploaders provide a support email and at least one additional contact
+   option (phone/WhatsApp or a support page) for payment and access problems.
+4. A learner completes payment outside JobNest, submits the transaction reference,
+   and waits for the uploader to review it.
+5. The uploader grants or rejects access from the Courses page. Approved learners
+   can open the course and see the uploader-managed certificate details.
+
+JobNest does not process, hold, or verify payments. The uploader is responsible
+for the external payment provider, payment verification, course access decision,
+and certificate issuance.
 
 ### Owner administration
 

@@ -204,6 +204,13 @@ export default function Home() {
                   >
                     Register Account
                   </Link>
+                  <Link
+                    href="/courses"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3.5 py-2 text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
+                  >
+                    <span aria-hidden="true">▥</span>
+                    Courses
+                  </Link>
                 </>
               )}
 
@@ -290,6 +297,14 @@ export default function Home() {
                         className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
                       >
                         <span>✍️</span> Register Account
+                      </Link>
+
+                      <Link
+                        href="/courses"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-50"
+                      >
+                        <span aria-hidden="true">▥</span> Courses
                       </Link>
 
                       <button

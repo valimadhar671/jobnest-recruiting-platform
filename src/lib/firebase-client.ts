@@ -84,7 +84,7 @@ export async function readFirestoreCollection<T>(
   return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() } as T & { id: string }));
 }
 
-type RealtimeCollection = "users" | "jobs" | "applications" | "reminders";
+type RealtimeCollection = "users" | "jobs" | "applications" | "courses" | "courseAccess" | "reminders";
 type RealtimeRecord = Record<string, unknown> & { id: string };
 type RealtimeListener = (collectionName: RealtimeCollection, records: RealtimeRecord[]) => void;
 
@@ -156,6 +156,11 @@ async function configureRealtimeListeners(uid: string) {
           limit(200),
         ),
   );
+  listen("courses", query(collection(db, "courses"), orderBy("createdAt", "desc"), limit(200)));
+  listen(
+    "courseAccess",
+    query(collection(db, "courseAccess"), where("learnerId", "==", uid), orderBy("requestedAt", "desc"), limit(100)),
+  );
   listen(
     "reminders",
     isAdmin
@@ -173,6 +178,17 @@ export async function uploadUserFile(userId: string, file: File, type: "resume" 
   }
   const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
   const fileRef = ref(getFirebaseStorage(), `users/${userId}/${type}-${crypto.randomUUID()}.${extension}`);
+  const result = await uploadBytes(fileRef, file, { contentType: file.type || undefined });
+  return getDownloadURL(result.ref);
+}
+
+export async function uploadCourseFile(userId: string, file: File) {
+  const allowedTypes = ["application/pdf", "video/mp4", "video/webm", "video/quicktime"];
+  if (!allowedTypes.includes(file.type) || file.size >= 50 * 1024 * 1024) {
+    throw new Error("Course content must be a PDF or video under 50 MB.");
+  }
+  const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
+  const fileRef = ref(getFirebaseStorage(), `courses/${userId}/${crypto.randomUUID()}.${extension}`);
   const result = await uploadBytes(fileRef, file, { contentType: file.type || undefined });
   return getDownloadURL(result.ref);
 }

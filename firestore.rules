@@ -91,6 +91,49 @@ service cloud.firestore {
         && (resource.data.candidateId == request.auth.uid || resource.data.recruiterId == request.auth.uid));
     }
 
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status == "published"
+        && shortText(request.resource.data.title, 160)
+        && shortText(request.resource.data.description, 5000)
+        && shortText(request.resource.data.category, 80)
+        && shortText(request.resource.data.duration, 80)
+        && request.resource.data.level in ["beginner", "intermediate", "advanced"]
+        && request.resource.data.accessType in ["free", "paid"]
+        && request.resource.data.contentUrl is string
+        && request.resource.data.contentType in ["application/pdf", "video/mp4", "video/webm", "video/quicktime"]
+        && (request.resource.data.accessType == "free"
+          || (request.resource.data.paymentUrl is string
+            && request.resource.data.paymentInstructions is string
+            && request.resource.data.supportEmail is string
+            && (request.resource.data.supportPhone is string
+              || request.resource.data.supportUrl is string)));
+      allow update: if signedIn()
+        && (resource.data.authorId == request.auth.uid || admin())
+        && request.resource.data.authorId == resource.data.authorId;
+      allow delete: if signedIn() && (resource.data.authorId == request.auth.uid || admin());
+    }
+
+    match /courseAccess/{accessId} {
+      allow read: if signedIn()
+        && (resource.data.learnerId == request.auth.uid
+          || resource.data.authorId == request.auth.uid
+          || admin());
+      allow create: if signedIn()
+        && request.resource.data.learnerId == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.authorId == get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.authorId
+        && shortText(request.resource.data.paymentReference, 200)
+        && shortText(request.resource.data.paymentNotes, 2000);
+      allow update: if signedIn()
+        && (resource.data.authorId == request.auth.uid || admin())
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.learnerId == resource.data.learnerId
+        && request.resource.data.status in ["approved", "rejected"];
+    }
+
     match /reminders/{reminderId} {
       allow read: if admin() || (signedIn() && resource.data.recipientId == request.auth.uid);
       allow create: if admin() || (signedIn() && request.resource.data.recipientId == request.auth.uid);
