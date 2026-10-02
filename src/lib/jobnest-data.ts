@@ -52,7 +52,7 @@ export type Course = {
   supportPhone?: string;
   supportUrl?: string;
   contentUrl: string;
-  contentType: string;
+  contentType: "external-link";
   certificateUrl?: string;
   certificateDetails?: string;
   createdAt: string;

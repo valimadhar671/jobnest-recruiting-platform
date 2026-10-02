@@ -13,20 +13,19 @@ import {
   writeCourseAccess,
   writeCourses,
 } from "@/lib/jobnest-data";
-import { getFirebaseAuth, isFirebaseConfigured, readFirestoreCollection, uploadCourseFile } from "@/lib/firebase-client";
+import { getFirebaseAuth, isFirebaseConfigured, readFirestoreCollection } from "@/lib/firebase-client";
 
 const emptyForm = {
   title: "", description: "", category: "", duration: "", level: "beginner" as Course["level"],
   accessType: "free" as Course["accessType"], paymentUrl: "", paymentInstructions: "",
   supportEmail: "", supportPhone: "", supportUrl: "",
-  certificateUrl: "", certificateDetails: "",
+  contentUrl: "", certificateUrl: "", certificateDetails: "",
 };
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [form, setForm] = useState(emptyForm);
-  const [file, setFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -81,8 +80,15 @@ export default function CoursesPage() {
       setError("Please sign in before uploading a course.");
       return;
     }
-    if (!form.title.trim() || form.description.trim().length < 20 || !form.category.trim() || !file) {
-      setError("Add a title, category, description of at least 20 characters, and a PDF or video file.");
+    if (!form.title.trim() || form.description.trim().length < 20 || !form.category.trim() || !form.contentUrl.trim()) {
+      setError("Add a title, category, description of at least 20 characters, and an external HTTPS course link.");
+      return;
+    }
+    try {
+      const contentUrl = new URL(form.contentUrl.trim());
+      if (!["http:", "https:"].includes(contentUrl.protocol)) throw new Error();
+    } catch {
+      setError("Course content must be a valid external HTTPS link.");
       return;
     }
     if (!form.duration.trim()) {
@@ -114,7 +120,6 @@ export default function CoursesPage() {
 
     setUploading(true);
     try {
-      const contentUrl = await uploadCourseFile(authUser.uid, file);
       const course: Course = {
         id: `course-${crypto.randomUUID()}`,
         authorId: authUser.uid,
@@ -130,8 +135,8 @@ export default function CoursesPage() {
         supportEmail: form.supportEmail.trim() || undefined,
         supportPhone: form.supportPhone.trim() || undefined,
         supportUrl: form.supportUrl.trim() || undefined,
-        contentUrl,
-        contentType: file.type,
+        contentUrl: form.contentUrl.trim(),
+        contentType: "external-link",
         certificateUrl: form.certificateUrl.trim() || undefined,
         certificateDetails: form.certificateDetails.trim() || undefined,
         createdAt: new Date().toISOString(),
@@ -140,7 +145,6 @@ export default function CoursesPage() {
 
       writeCourses([course, ...getCourses()]);
       setForm(emptyForm);
-      setFile(null);
       setMessage("Course uploaded and published successfully.");
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Course upload failed. Please try again.");
@@ -289,7 +293,7 @@ export default function CoursesPage() {
           <section id="upload-course" className="scroll-mt-6 mt-8 rounded-[2rem] border border-slate-200 bg-slate-950 p-7 text-white sm:p-9">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">For educators and experts</p>
             <h2 className="mt-2 text-3xl font-black">Upload your course</h2>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">Publish a PDF lesson or video course for candidates and recruiters. Course files are limited to 50 MB.</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-300">Publish a course hosted on Google Drive, Dropbox, YouTube, an LMS, or another trusted HTTPS provider. JobNest stores only the link.</p>
             <form onSubmit={handleUpload} className="mt-6 grid gap-4 md:grid-cols-2">
               <input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400" placeholder="Course title" />
               <input required value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400" placeholder="Category, e.g. Interview skills" />
@@ -309,7 +313,7 @@ export default function CoursesPage() {
                   <input value={form.supportUrl} onChange={(event) => setForm({ ...form, supportUrl: event.target.value })} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400" placeholder="Support page or WhatsApp link (alternative extra option)" />
                 </>
               )}
-              <input required type="file" accept=".pdf,video/mp4,video/webm,video/quicktime" onChange={(event) => setFile(event.target.files?.[0] || null)} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-300" />
+              <input required type="url" value={form.contentUrl} onChange={(event) => setForm({ ...form, contentUrl: event.target.value })} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400 md:col-span-2" placeholder="External course link (Google Drive, Dropbox, YouTube, LMS, etc.)" />
               <textarea required value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-28 rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400 md:col-span-2" placeholder="Describe what learners will gain (at least 20 characters)" />
               <input value={form.certificateUrl} onChange={(event) => setForm({ ...form, certificateUrl: event.target.value })} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400" placeholder="Certificate link (optional)" />
               <input value={form.certificateDetails} onChange={(event) => setForm({ ...form, certificateDetails: event.target.value })} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400" placeholder="Certificate details, issuer, criteria" />

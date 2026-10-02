@@ -113,7 +113,7 @@
 
       <h2>Link-based candidate attachments</h2>
       <p>Resumes and introduction videos use validated <strong>HTTP/HTTPS links</strong> from Google Drive,
-        Dropbox, YouTube, or another trusted host. Only the link is stored, avoiding Firebase Storage
+        Dropbox, YouTube, or another trusted host. Only the link is stored; Firebase Storage is not used
         billing in the current free-tier design. Candidates control external sharing permissions.</p>
 
       <h2>Security and access control</h2>
@@ -185,7 +185,7 @@
       <h2>Important operational notes</h2>
       <p>Never commit <code>.env.local</code>, OAuth secrets, service-account keys, or API tokens.
         External links must have suitable sharing permissions; JobNest does not control their privacy or
-        availability. Real email/SMS delivery needs a separate provider. Firebase Storage is optional.</p>
+        availability. Real email/SMS delivery needs a separate provider. Course and candidate files remain external links.</p>
     </div>
   </div>
 

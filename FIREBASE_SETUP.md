@@ -8,9 +8,9 @@
    applications and reminders by their candidate/recruiter relationships. Set a
    custom `admin` claim on the platform owner Firebase UID for approval actions
    and owner-wide reads.
-4. Candidate resumes and intro videos are stored as shareable HTTPS links
-   (Google Drive, Dropbox, YouTube, or another trusted host). Firebase Storage
-   is optional and is not required for the free-tier deployment.
+4. Candidate resumes, intro videos, and course content are stored as shareable
+   HTTPS links (Google Drive, Dropbox, YouTube, an LMS, or another trusted host).
+   Firebase Storage is not used by this product.
 5. Add the production app domain to Authentication authorized domains.
 6. From this directory, run `firebase deploy --only firestore:rules,firestore:indexes`
    after installing/authenticating the Firebase CLI and selecting the intended
@@ -23,7 +23,7 @@ The client hydrates Firestore only after Firebase Auth is ready. User reads are
 scoped to the signed-in profile, application reads to the candidate/recruiter,
 and reminder reads to the signed-in recipient. Jobs are publicly readable.
 
-## 2k–5k user launch checklist
+## 5k-user launch and 10k-growth checklist
 
 - Enable and enforce **App Check** (reCAPTCHA Enterprise or your selected web
   provider) for Firestore and Auth after testing the production domain.
@@ -63,13 +63,13 @@ non-essential reminder processing. At 95%, enable a maintenance banner for new
 registrations while existing users can continue reading their accounts and
 applications. Never silently report a successful write when Firebase rejects it.
 
-For the next 5,000 users:
+For the first 5,000 users and the next 5,000-user growth threshold:
 
 - Keep jobs and applications paginated and query-scoped; do not replace the
   bounded queries/listeners with whole-collection reads.
 - Increase Firebase quotas or billing limits before the alert reaches 100%.
-- If private file storage is later required, add a trusted file service only
-  after confirming that the additional billing is acceptable.
+- Keep file and course content on external providers; adding private file storage
+  would introduce a separate paid service and is out of scope.
 - Export Firestore backups and test a restore procedure before increasing
   registration traffic.
 - Use Firebase Performance/Crashlytics or equivalent monitoring to watch

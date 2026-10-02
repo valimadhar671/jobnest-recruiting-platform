@@ -23,16 +23,16 @@ import {
   orderBy,
   Unsubscribe,
 } from "firebase/firestore";
-import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
+
+const COLLECTION_READ_LIMIT = 500;
 
 export function isFirebaseConfigured() {
   return Object.values(firebaseConfig).every(Boolean);
@@ -66,10 +66,6 @@ export function getFirebaseDb(): Firestore {
   }
 }
 
-export function getFirebaseStorage(): FirebaseStorage {
-  return getStorage(getFirebaseApp());
-}
-
 export async function saveFirestoreDocument(collectionName: string, id: string, data: Record<string, unknown>) {
   await setDoc(doc(getFirebaseDb(), collectionName, id), data, { merge: true });
 }
@@ -80,7 +76,7 @@ export async function readFirestoreCollection<T>(
 ): Promise<Array<T & { id: string }>> {
   const source = collection(getFirebaseDb(), collectionName);
   const constraints = filter ? [where(filter.field, "==", filter.value)] : [];
-  const snapshot = await getDocs(query(source, ...constraints, limit(200)));
+  const snapshot = await getDocs(query(source, ...constraints, limit(COLLECTION_READ_LIMIT)));
   return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() } as T & { id: string }));
 }
 
@@ -167,30 +163,6 @@ async function configureRealtimeListeners(uid: string) {
       ? query(collection(db, "reminders"), orderBy("createdAt", "desc"), limit(200))
       : query(collection(db, "reminders"), where("recipientId", "==", uid), orderBy("createdAt", "desc"), limit(100)),
   );
-}
-
-export async function uploadUserFile(userId: string, file: File, type: "resume" | "intro") {
-  const allowedTypes = type === "resume"
-    ? ["application/pdf"]
-    : ["video/mp4", "video/webm", "video/quicktime"];
-  if (!allowedTypes.includes(file.type) || file.size >= 15 * 1024 * 1024) {
-    throw new Error(type === "resume" ? "Resume must be a PDF under 15 MB." : "Intro video must be MP4, WebM, or QuickTime under 15 MB.");
-  }
-  const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
-  const fileRef = ref(getFirebaseStorage(), `users/${userId}/${type}-${crypto.randomUUID()}.${extension}`);
-  const result = await uploadBytes(fileRef, file, { contentType: file.type || undefined });
-  return getDownloadURL(result.ref);
-}
-
-export async function uploadCourseFile(userId: string, file: File) {
-  const allowedTypes = ["application/pdf", "video/mp4", "video/webm", "video/quicktime"];
-  if (!allowedTypes.includes(file.type) || file.size >= 50 * 1024 * 1024) {
-    throw new Error("Course content must be a PDF or video under 50 MB.");
-  }
-  const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
-  const fileRef = ref(getFirebaseStorage(), `courses/${userId}/${crypto.randomUUID()}.${extension}`);
-  const result = await uploadBytes(fileRef, file, { contentType: file.type || undefined });
-  return getDownloadURL(result.ref);
 }
 
 export function getGoogleProvider() {

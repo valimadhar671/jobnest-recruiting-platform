@@ -27,7 +27,8 @@ share professional links, submit applications, and track application status.
 - In-app reminders and realtime dashboard updates.
 - Course publishing with uploader name, learning period, free or paid access,
   external payment instructions, learner payment confirmation, uploader approval,
-  and optional certificate details/link.
+  and optional certificate details/link. Course content is always an external
+  HTTPS link; JobNest does not use Firebase Storage.
 
 ## Technology
 
@@ -43,7 +44,8 @@ share professional links, submit applications, and track application status.
 - npm
 - A Firebase project with Authentication and Firestore enabled
 
-Firebase Storage is not required by the current link-based attachment flow.
+Firebase Storage is not used. Resumes, intro videos, and course content are
+external HTTPS links hosted by the user.
 
 ## Local setup
 
@@ -123,8 +125,8 @@ The repository includes:
 
 ### Courses
 
-1. A signed-in user uploads a PDF or video course and adds the course name,
-   description, uploader identity, learning period, and certificate information.
+1. A signed-in user publishes an external PDF/video/LMS link and adds the course
+   name, description, uploader identity, learning period, and certificate information.
 2. Paid courses include an external HTTPS payment link and payment instructions.
 3. Paid uploaders provide a support email and at least one additional contact
    option (phone/WhatsApp or a support page) for payment and access problems.

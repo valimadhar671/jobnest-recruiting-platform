@@ -103,7 +103,7 @@ service cloud.firestore {
         && request.resource.data.level in ["beginner", "intermediate", "advanced"]
         && request.resource.data.accessType in ["free", "paid"]
         && request.resource.data.contentUrl is string
-        && request.resource.data.contentType in ["application/pdf", "video/mp4", "video/webm", "video/quicktime"]
+        && request.resource.data.contentType == "external-link"
         && (request.resource.data.accessType == "free"
           || (request.resource.data.paymentUrl is string
             && request.resource.data.paymentInstructions is string
