@@ -102,7 +102,6 @@ service cloud.firestore {
         && shortText(request.resource.data.duration, 80)
         && request.resource.data.level in ["beginner", "intermediate", "advanced"]
         && request.resource.data.accessType in ["free", "paid"]
-        && request.resource.data.contentUrl is string
         && request.resource.data.contentType == "external-link"
         && (request.resource.data.accessType == "free"
           || (request.resource.data.paymentUrl is string
@@ -116,12 +115,31 @@ service cloud.firestore {
       allow delete: if signedIn() && (resource.data.authorId == request.auth.uid || admin());
     }
 
+    match /courseContent/{courseId} {
+      allow read: if signedIn()
+        && (resource.data.authorId == request.auth.uid
+          || (exists(/databases/$(database)/documents/courseAccess/$(request.auth.uid + "_" + courseId))
+            && get(/databases/$(database)/documents/courseAccess/$(request.auth.uid + "_" + courseId)).data.status == "approved"));
+      allow create: if signedIn()
+        && request.resource.data.id == courseId
+        && request.resource.data.courseId == courseId
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.contentType == "external-link"
+        && request.resource.data.contentUrl is string;
+      allow update: if signedIn()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.courseId == resource.data.courseId;
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+
     match /courseAccess/{accessId} {
       allow read: if signedIn()
         && (resource.data.learnerId == request.auth.uid
           || resource.data.authorId == request.auth.uid
           || admin());
       allow create: if signedIn()
+        && request.resource.data.id == request.auth.uid + "_" + request.resource.data.courseId
         && request.resource.data.learnerId == request.auth.uid
         && request.resource.data.status == "pending"
         && request.resource.data.authorId == get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.authorId

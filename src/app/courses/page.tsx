@@ -6,14 +6,17 @@ import { SiteBrand } from "@/components/site-brand";
 import {
   Course,
   CourseAccess,
+  CourseContent,
   getCurrentUser,
   getCourses,
   getCourseAccess,
+  getCourseContent,
   subscribeToData,
   writeCourseAccess,
+  writeCourseContent,
   writeCourses,
 } from "@/lib/jobnest-data";
-import { getFirebaseAuth, isFirebaseConfigured, readFirestoreCollection } from "@/lib/firebase-client";
+import { getFirebaseAuth, isFirebaseConfigured, readFirestoreCollection, readFirestoreDocument } from "@/lib/firebase-client";
 
 const emptyForm = {
   title: "", description: "", category: "", duration: "", level: "beginner" as Course["level"],
@@ -31,6 +34,7 @@ export default function CoursesPage() {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [accessRecords, setAccessRecords] = useState<CourseAccess[]>([]);
+  const [courseContent, setCourseContent] = useState<CourseContent[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
@@ -63,6 +67,22 @@ export default function CoursesPage() {
       setAccessRecords(Array.from(new Map(records.flat().map((record) => [record.id, record])).values()));
     }).catch(() => setError("Course access records could not be loaded."));
   }, [currentUser, courses]);
+
+  useEffect(() => {
+    if (!currentUser || !isFirebaseConfigured()) return;
+    const approvedPaidCourses = courses.filter((course) =>
+      course.accessType === "paid" && (
+        course.authorId === currentUser.id ||
+        accessRecords.some((record) => record.courseId === course.id && record.learnerId === currentUser.id && record.status === "approved")
+      ),
+    );
+    void Promise.all(approvedPaidCourses.map((course) => readFirestoreDocument<CourseContent>("courseContent", course.id)))
+      .then((records) => {
+        const available = records.filter((record): record is CourseContent => Boolean(record));
+        setCourseContent(available);
+      })
+      .catch(() => setError("Approved course content could not be loaded."));
+  }, [currentUser, courses, accessRecords]);
 
   const visibleCourses = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -135,7 +155,7 @@ export default function CoursesPage() {
         supportEmail: form.supportEmail.trim() || undefined,
         supportPhone: form.supportPhone.trim() || undefined,
         supportUrl: form.supportUrl.trim() || undefined,
-        contentUrl: form.contentUrl.trim(),
+        contentUrl: form.accessType === "free" ? form.contentUrl.trim() : undefined,
         contentType: "external-link",
         certificateUrl: form.certificateUrl.trim() || undefined,
         certificateDetails: form.certificateDetails.trim() || undefined,
@@ -144,6 +164,16 @@ export default function CoursesPage() {
       };
 
       writeCourses([course, ...getCourses()]);
+      if (form.accessType === "paid") {
+        const content: CourseContent = {
+          id: course.id,
+          courseId: course.id,
+          authorId: authUser.uid,
+          contentUrl: form.contentUrl.trim(),
+          contentType: "external-link",
+        };
+        writeCourseContent([content, ...getCourseContent()]);
+      }
       setForm(emptyForm);
       setMessage("Course uploaded and published successfully.");
     } catch (uploadError) {
@@ -162,7 +192,7 @@ export default function CoursesPage() {
     setRequestingAccess(true);
     try {
       const request: CourseAccess = {
-        id: `access-${crypto.randomUUID()}`,
+        id: `${currentUser.id}_${selectedCourse.id}`,
         courseId: selectedCourse.id,
         courseTitle: selectedCourse.title,
         authorId: selectedCourse.authorId,
@@ -264,8 +294,8 @@ export default function CoursesPage() {
                     {course.supportUrl && <a className="mt-1 block underline" href={course.supportUrl} target="_blank" rel="noreferrer">Open support contact</a>}
                   </div>
                 )}
-                {currentUser && (course.accessType === "free" || course.authorId === currentUser.id || accessRecords.some((record) => record.courseId === course.id && record.learnerId === currentUser.id && record.status === "approved")) ? (
-                  <a href={course.contentUrl} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-full bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-500">Open course</a>
+                {currentUser && (course.accessType === "free" || course.authorId === currentUser.id || accessRecords.some((record) => record.courseId === course.id && record.learnerId === currentUser.id && record.status === "approved")) && (course.contentUrl || courseContent.find((content) => content.courseId === course.id)?.contentUrl) ? (
+                  <a href={course.contentUrl || courseContent.find((content) => content.courseId === course.id)?.contentUrl} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-full bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-500">Open course</a>
                 ) : !currentUser ? (
                   <Link href="/signup" className="mt-5 inline-flex rounded-full bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-500">Sign in to access</Link>
                 ) : accessRecords.some((record) => record.courseId === course.id && record.learnerId === currentUser?.id && record.status === "pending") ? (

@@ -80,7 +80,13 @@ export async function readFirestoreCollection<T>(
   return snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() } as T & { id: string }));
 }
 
-type RealtimeCollection = "users" | "jobs" | "applications" | "courses" | "courseAccess" | "reminders";
+export async function readFirestoreDocument<T>(collectionName: string, id: string): Promise<(T & { id: string }) | null> {
+  const snapshot = await getDocs(query(collection(getFirebaseDb(), collectionName), where("__name__", "==", id), limit(1)));
+  const entry = snapshot.docs[0];
+  return entry ? ({ id: entry.id, ...entry.data() } as T & { id: string }) : null;
+}
+
+type RealtimeCollection = "users" | "jobs" | "applications" | "courses" | "courseContent" | "courseAccess" | "reminders";
 type RealtimeRecord = Record<string, unknown> & { id: string };
 type RealtimeListener = (collectionName: RealtimeCollection, records: RealtimeRecord[]) => void;
 
@@ -153,6 +159,7 @@ async function configureRealtimeListeners(uid: string) {
         ),
   );
   listen("courses", query(collection(db, "courses"), orderBy("createdAt", "desc"), limit(200)));
+  listen("courseContent", query(collection(db, "courseContent"), where("authorId", "==", uid), limit(200)));
   listen(
     "courseAccess",
     query(collection(db, "courseAccess"), where("learnerId", "==", uid), orderBy("requestedAt", "desc"), limit(100)),

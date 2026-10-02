@@ -51,12 +51,20 @@ export type Course = {
   supportEmail?: string;
   supportPhone?: string;
   supportUrl?: string;
-  contentUrl: string;
+  contentUrl?: string;
   contentType: "external-link";
   certificateUrl?: string;
   certificateDetails?: string;
   createdAt: string;
   status: "published";
+};
+
+export type CourseContent = {
+  id: string;
+  courseId: string;
+  authorId: string;
+  contentUrl: string;
+  contentType: "external-link";
 };
 
 export type CourseAccess = {
@@ -119,6 +127,7 @@ const memory = {
   jobs: [] as Job[],
   applications: [] as Application[],
   courses: [] as Course[],
+  courseContent: [] as CourseContent[],
   courseAccess: [] as CourseAccess[],
   reminders: [] as Reminder[],
   session: null as Session | null,
@@ -184,6 +193,8 @@ export async function startRealtimeSync() {
         memory.applications = records as Application[];
       } else if (collectionName === "courses") {
         memory.courses = records as Course[];
+      } else if (collectionName === "courseContent") {
+        memory.courseContent = records as CourseContent[];
       } else if (collectionName === "courseAccess") {
         memory.courseAccess = records as CourseAccess[];
       } else {
@@ -262,6 +273,17 @@ export function writeCourses(courses: Course[]) {
   memory.courses = courses;
   notifyDataSubscribers();
   void persistCollection("courses", courses, previous);
+}
+
+export function getCourseContent(): CourseContent[] {
+  return memory.courseContent;
+}
+
+export function writeCourseContent(content: CourseContent[]) {
+  const previous = memory.courseContent;
+  memory.courseContent = content;
+  notifyDataSubscribers();
+  void persistCollection("courseContent", content, previous);
 }
 
 export function getCourseAccess(): CourseAccess[] {
