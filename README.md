@@ -17,9 +17,10 @@ share professional links, submit applications, and track application status.
 - Browser-side expiry automation closes notices after `expiresAt` and creates
   in-app notices for the recruiter and applicants while retaining application
   history.
-- A protected `/api/automation` endpoint can run independently on an hourly
+- A protected `/api/automation` endpoint can run independently on a daily
   scheduler (the included Vercel Cron configuration) for reliable expiry
-  closure and reminder creation when no browser is open.
+  closure and reminder creation when no browser is open. Vercel Pro can be
+  used when hourly processing is required.
 - Resume and intro-video links instead of binary uploads, avoiding Storage
   charges and allowing candidates to use Google Drive, Dropbox, YouTube, or
   another trusted HTTPS host.

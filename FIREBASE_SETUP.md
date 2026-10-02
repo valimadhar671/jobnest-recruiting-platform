@@ -43,7 +43,9 @@ and reminder reads to the signed-in recipient. Jobs are publicly readable.
 
 The repository includes `/api/automation`, a protected server endpoint that
 closes expired jobs, retains applications, and creates deduplicated in-app
-reminders for candidates and recruiters. `vercel.json` schedules it hourly.
+reminders for candidates and recruiters. `vercel.json` schedules it daily at
+03:00 UTC, which is compatible with Vercel Hobby plans. Use a Pro plan if
+hourly processing is required.
 Configure `FIREBASE_SERVICE_ACCOUNT_JSON` and `CRON_SECRET` as
 server-only deployment secrets. The endpoint creates in-app reminders; real
 email or SMS delivery requires a separately configured provider.
